@@ -1,6 +1,6 @@
 import pygame, sys
 from button import *
-from solve import valid_add
+from solve import valid_add, solve_board
 from puzzle import *
 from constants import *
 pygame.font.init()
@@ -8,7 +8,6 @@ pygame.font.init()
 class Game:
     def __init__(self):
         pygame.init()
-        pygame.display.set_caption("Sudoku")
         self.window = pygame.display.set_mode((WIDTH, HEIGHT))
         self.running = False
         self.board = []
@@ -22,9 +21,7 @@ class Game:
         self.mouse_position = None
         self.font = pygame.font.SysFont("comicsans", 40)
         self.play_time = True
-        self.new_game_buttons = []
-        self.toggle_buttons = []
-        self.end_buttons = []
+        self.buttons = []
         self.highlight_incorrect_mode = True
         self.incorrect_tracker = False
         self.incorrect_submissions = 0
@@ -41,7 +38,7 @@ class Game:
                 self.draw()  
                 #self.play_time = round(pygame.time.get.ticks() - start_time)
         pygame.quit()
-        sys.quit()      
+        #sys.quit()      
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -53,9 +50,9 @@ class Game:
                 if not self.selected_square or self.selected_square in self.original_filled:
                     self.selected_square = None
                 
-                for button in self.new_game_buttons:
+                for button in self.buttons:
                     if button.hovered:
-                        button.click_new_game()
+                        button.click()
 
             if event.type == pygame.KEYDOWN and self.selected_square != None:
                 try:
@@ -97,7 +94,7 @@ class Game:
 
     def update_state(self):
         self.mouse_position = pygame.mouse.get_pos()
-        for button in self.new_game_buttons:
+        for button in self.buttons:
             button.update_button_state(self.mouse_position)
 
         if self.highlight_incorrect_mode:
@@ -113,7 +110,7 @@ class Game:
     def draw(self):
         self.window.fill(WHITE)
 
-        for button in self.new_game_buttons:
+        for button in self.buttons:
             button.draw_button(self.window)
 
         if self.selected_square:
@@ -127,7 +124,7 @@ class Game:
 
 
     def draw_board(self, window):
-        pygame.draw.rect(window, BLACK, (BOARD_POSITION[0], BOARD_POSITION[1], WIDTH-150, HEIGHT-150), 2)
+        pygame.draw.rect(window, BLACK, (BOARD_POSITION[0], BOARD_POSITION[1], WIDTH-150, HEIGHT-200), 2)
         for c in range(9):
             if c%3 != 0:
                 pygame.draw.line(window, BLACK, (BOARD_POSITION[0]+c*CELL_SIZE, BOARD_POSITION[1]), (BOARD_POSITION[0]+c*CELL_SIZE, BOARD_POSITION[1]+450))
@@ -154,30 +151,31 @@ class Game:
     
 
     def load_buttons(self):
-        self.new_game_buttons.append(Button(20, 40, WIDTH//7, 40,
+        self.buttons.append(Button(20, 40, WIDTH//7, 40,
                                             function=self.solve,  
                                             colour=(27,142,207),
-                                            text="Check"))
-        self.new_game_buttons.append(Button(140, 40, WIDTH//7, 40,
+                                            text="Solve"))
+
+        self.buttons.append(Button(400, 600, WIDTH//5, 40,
+                                            function=self.toggle_mode,  
+                                            colour=(27,142,207),
+                                            text="Toggle Mode"))
+
+        self.buttons.append(Button(140, 40, WIDTH//7, 40,
                                             colour=(117,172,112),
                                             function=self.set_board,
                                             params=EASY,
                                             text="Easy"))
-        self.new_game_buttons.append(Button(WIDTH//2-(WIDTH//7)//2, 40, WIDTH//7, 40,
+        self.buttons.append(Button(WIDTH//2-(WIDTH//7)//2, 40, WIDTH//7, 40,
                                             colour=(204,197,110),
                                             function=self.set_board,
                                             params=MEDIUM,
                                             text="Medium"))
-        self.new_game_buttons.append(Button(380, 40, WIDTH//7, 40,
-                                            colour=(199,129,48),
-                                            function=self.set_board,
-                                            params=HARD,
-                                            text="Hard"))
-        self.new_game_buttons.append(Button(500, 40, WIDTH//7, 40,
-                                            colour=(207,68,68),
-                                            function=self.set_board,
-                                            params=EVIL,
-                                            text="Evil"))
+        self.buttons.append(Button(380, 40, WIDTH//7, 40, colour=(199,129,48),
+            function=self.set_board, params=HARD, text="Hard"))
+        self.buttons.append(Button(500, 40, WIDTH//7, 40, colour=(207,68,68),
+            confirmation_title=START_NEW_GAME_TITLE, confirmation_message=START_NEW_GAME_MESSAGE,
+            function=self.set_board, params=EVIL, text="Evil"))
 
 
 
@@ -203,7 +201,46 @@ class Game:
                         self.original_filled.append((c, r))
             self.sketch_filled = []
             self.entered_filled = []
+            self.set_window_title()
 
 
     def solve(self):
-        pass
+        for entered in self.entered_filled:
+            if self.board[entered[1]][entered[0]] != self.solution[enetered[1]][entered[0]]:
+                self.board[entered[1]][entered[0]] = 0
+        
+        for sketched in self.sketch_filled:
+            if self.board[sketched[1]][sketched[0]] != self.solution[sketched[1]][sketched[0]]:
+                self.board[sketched[1]][sketched[0]] = 0
+
+        solve_board(self.board)
+
+
+    def toggle_mode(self):
+        if self.highlight_incorrect_mode:
+            self.highlight_incorrect_mode = False
+            self.incorrect_tracker = True
+        else:
+            self.highlight_incorrect_mode = True
+            self.incorrect_tracker = False
+        self.set_window_title()
+
+    def set_window_title(self):
+        if self.highlight_incorrect_mode:
+            if self.difficulty == EASY:
+                pygame.display.set_caption(WINDOW_TITLE + EASY_MODE_TITLE + HIGHLIGHT_ERROR_TITLE)
+            elif self.difficulty == MEDIUM:
+                pygame.display.set_caption(WINDOW_TITLE + MEDIUM_MODE_TITLE + HIGHLIGHT_ERROR_TITLE)
+            elif self.difficulty == HARD:
+                pygame.display.set_caption(WINDOW_TITLE + HARD_MODE_TITLE + HIGHLIGHT_ERROR_TITLE)
+            elif self.difficulty == EVIL:
+                pygame.display.set_caption(WINDOW_TITLE + EVIL_MODE_TITLE + HIGHLIGHT_ERROR_TITLE)
+        else:
+            if self.difficulty == EASY:
+                pygame.display.set_caption(WINDOW_TITLE + EASY_MODE_TITLE + TRACK_ERROR_TITLE)
+            elif self.difficulty == MEDIUM:
+                pygame.display.set_caption(WINDOW_TITLE + MEDIUM_MODE_TITLE + TRACK_ERROR_TITLE)
+            elif self.difficulty == HARD:
+                pygame.display.set_caption(WINDOW_TITLE + HARD_MODE_TITLE + TRACK_ERROR_TITLE)
+            elif self.difficulty == EVIL:
+                pygame.display.set_caption(WINDOW_TITLE + EVIL_MODE_TITLE + TRACK_ERROR_TITLE)
