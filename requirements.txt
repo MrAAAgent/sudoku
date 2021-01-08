@@ -1,0 +1,5 @@
+# will need Python
+# will need to pip install the following:
+pygame
+requests
+bs4
