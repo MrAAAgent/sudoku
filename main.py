@@ -1,4 +1,4 @@
-from game import *
+from game import Game
 
 # RUN THIS FILE TO START THE GAME
 def begin():
