@@ -16,7 +16,10 @@ def get_puzzle(difficulty):
             data.append(soup.find('input', id=id))
         board = [[0 for x in range(NUM_COLUMNS)] for x in range(NUM_ROWS)]
         for index, cell in enumerate(data):
-            board[index//9][index%9] = int(cell['value'])
+            try:
+                board[index//9][index%9] = int(cell['value'])
+            except:
+                pass
         return board
     except:
         return TEST_BOARD
