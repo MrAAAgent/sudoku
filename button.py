@@ -1,6 +1,4 @@
 import pygame
-import tkinter as tkinter
-from tkinter import messagebox
 from constants import START_NEW_GAME_TITLE, START_NEW_GAME_MESSAGE
 
 class Button:
@@ -33,21 +31,11 @@ class Button:
         window.blit(self.image, self.position)
 
 
-    def click(self): 
-        if self.confirmation_message:
-            root = tkinter.Tk()
-            root.withdraw() # hide the tkinter root window
-            confirmation = tkinter.messagebox.askquestion(self.confirmation_title, self.confirmation_message)
-            if confirmation == 'yes':
-                if self.params:
-                    self.function(self.params)
-                else:
-                    self.function()
+    def click(self):
+        if self.params:
+            self.function(self.params)
         else:
-            if self.params:
-                self.function(self.params)
-            else:
-                self.function()
+            self.function()
             
 
     def draw_button_text(self, text):
